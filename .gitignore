@@ -24,6 +24,7 @@ env/
 *.pt
 *.zip
 *.gif
+*.pt
 
 # Torch geometric temporary/compiled files
 torch_geometric/data/.cache/
