@@ -5,11 +5,10 @@ Argument:
     filename: full adress and filename of the .skeleton file.
 
 Running :
-    ~/graph-based_action-recognition$ python -m Src.Skeleton.read_skeleton_file Dataset/nturgb+d_skeletons/S001C001P001R001A001.skeleton
+    ~/graph-based_action-recognition$ python -m data_generator.utils.read_skeleton_file data/nturgb+d_skeletons/S001C001P001R001A001.skeleton
 """
-import sys
-from Src.Skeleton.body import Body
-from Src.Skeleton.joint import Joint
+from data_generator.skeleton.body import Body
+from data_generator.skeleton.joint import Joint
 
 def read_skeleton_file(filename: str):
     with open(filename, "r") as file:
@@ -20,10 +19,10 @@ def read_skeleton_file(filename: str):
             return list(map(float, file.readline().strip().split()))
 
         frame_count = read_int()
-        body_info = []
+        skeleton_sequence = []
 
         for _ in range(frame_count):
-            frame_bodies = []
+            frame_info = []
             body_count = read_int()
 
             for _ in range(body_count):
@@ -51,18 +50,7 @@ def read_skeleton_file(filename: str):
                     joint = Joint(jointinfo, tracking_state)
                     body.joints.append(joint)
 
-                frame_bodies.append(body)
-            body_info.append(frame_bodies)
+                frame_info.append(body)
+            skeleton_sequence.append(frame_info)
 
-    return body_info
-    
-
-# TO DO: argparse should be used
-"""
-if len(sys.argv) != 2:
-    print('Need a filename as argument')
-    exit(1)
-
-data = read_skeleton_file(sys.argv[1])
-print("read_skeleton_file.py Frame count:", len(data))
-"""
+    return skeleton_sequence
