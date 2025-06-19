@@ -10,34 +10,32 @@ from tqdm import tqdm
 
 from torch_geometric.data import InMemoryDataset, Data
 from data_generator.utils.read_skeleton_file import read_skeleton_file
-from tools.rotation import *
+from data_generator.utils.rotation import *
 
 # ==================== Configuration ====================
 ROOT_DIR = "data/"
 RAW_DIR = "data/nturgb+d_skeletons/"
 
-IGNORED_SAMPLE_PATH = os.path.join(ROOT_DIR, "NTU_RGBD_samples_with_missing_skeletons.txt")
-with open(IGNORED_SAMPLE_PATH, "r") as f:
-    IGNORED_SAMPLES = set(line.strip() for line in f.readlines()[3:])
+NTU_RGBD_IGNORED_SAMPLE_PATH = os.path.join(ROOT_DIR, "NTU_RGBD_samples_with_missing_skeletons.txt")
+with open(NTU_RGBD_IGNORED_SAMPLE_PATH, "r") as f:
+    NTU_RGBD_IGNORED_SAMPLES = set(line.strip() for line in f.readlines())
 
-CONNECTING_JOINT = [2, 1, 21, 3, 21, 5, 6, 7, 21, 9, 10, 11,
-                    1, 13, 14, 15, 1, 17, 18, 19, 2, 8, 8, 12, 12] - np.array(np.ones(25))
+NTU_RGBD120_IGNORED_SAMPLE_PATH = os.path.join(ROOT_DIR, "NTU_RGBD120_samples_with_missing_skeletons.txt")
+with open(NTU_RGBD120_IGNORED_SAMPLE_PATH, "r") as f:
+    NTU_RGBD120_IGNORED_SAMPLES = set(line.strip() for line in f.readlines())
+
+CONNECTING_JOINT = [1, 0, 20, 2, 20, 4, 5, 6, 20, 8, 9, 10,
+                    0, 12, 13, 14, 0, 16, 17, 18, 1, 7, 7, 11, 11]
 DIRECTED_EDGES = [(i, CONNECTING_JOINT[i]) for i in range(len(CONNECTING_JOINT))]
 BIDIRECTED_EDGES = DIRECTED_EDGES + [(v, u) for u, v in DIRECTED_EDGES]
 EDGE_INDEX = torch.tensor(BIDIRECTED_EDGES, dtype=torch.long).t()
 
-TRAINING_SUBJECTS = [
-    1
-]
-
-"""
 TRAINING_SUBJECTS = [
     1, 2, 4, 5, 8, 9, 13, 14, 15, 16, 17, 18, 19, 25, 27, 28,
     31, 34, 35, 38, 45, 46, 47, 49, 50, 52, 53, 54, 55, 56, 57,
     58, 59, 70, 74, 78, 80, 81, 82, 83, 84, 85, 86, 89, 91, 92,
     93, 94, 95, 97, 98, 100, 103
 ]
-"""
 
 TRAINING_CAMERAS = [2, 3]
 
@@ -94,10 +92,11 @@ class NTU_Data():
 
 class NTU_Dataset(InMemoryDataset):
     def __init__(self, root=ROOT_DIR, transform=None, pre_transform=None, pre_filter=None,
-                 modality="joint", benchmark="xview", part="eval"):
+                 modality="joint", benchmark="xsub", part="train", extended=False):
         self.modality = modality
         self.benchmark = benchmark
         self.part = part
+        self.extended = extended
         super(NTU_Dataset, self).__init__(root, transform, pre_transform, pre_filter)
 
         self.load(self.processed_paths[0])
@@ -112,7 +111,7 @@ class NTU_Dataset(InMemoryDataset):
     
     @property
     def processed_dir(self):
-        return os.path.join(os.path.dirname(ROOT_DIR), f"ntu_rgbd_{self.benchmark}")
+        return os.path.join(os.path.dirname(ROOT_DIR), f"ntu_rgbd{120 if self.extended else ''}_{self.benchmark}")
 
     @property
     def processed_file_names(self):
@@ -126,27 +125,33 @@ class NTU_Dataset(InMemoryDataset):
 
             # Skip sample if it does not pass the pre_filter
             if self.pre_filter is not None:
-                if not self.pre_filter(sample_id, self.benchmark, self.part):
+                if not self.pre_filter(sample_id, self.benchmark, self.part, self.extended):
                     continue
             
             data = NTU_Data(full_path)
 
             # Apply optional transform
             if self.pre_transform is not None:
-                data.x = self.pre_transform(data.x)
+                data.x = self.pre_transform(data=data.x, modality=self.modality)
 
             data_list.append(Data(x = data.x.unsqueeze(0), y= data.y, edge_index=EDGE_INDEX.unsqueeze(-1)))
 
         self.save(data_list, self.processed_paths[0])
 
     @staticmethod
-    def __nturgbd_pre_filter__(sample_id, benchmark, part):
-        if sample_id in IGNORED_SAMPLES:
+    def __nturgbd_pre_filter__(sample_id, benchmark, part, extended):
+        if sample_id in NTU_RGBD120_IGNORED_SAMPLES:
             return False
         
         subject_id = int(sample_id[sample_id.find('P') + 1:sample_id.find('P') + 4])
         camera_id =  int(sample_id[sample_id.find('C') + 1:sample_id.find('C') + 4])
+        setup_id = int(sample_id[sample_id.find('S') + 1:sample_id.find('S') + 4])
+        action_class = int(sample_id[sample_id.find('A') + 1:sample_id.find('A') + 4])
 
+        if not extended:
+            if action_class > 60:
+                return False
+        
         is_sample = False
         is_training = False
 
@@ -154,15 +159,17 @@ class NTU_Dataset(InMemoryDataset):
             is_training = (camera_id in TRAINING_CAMERAS)
         elif benchmark == "xsub":
             is_training = (subject_id in TRAINING_SUBJECTS)
+        elif benchmark == "xsetup":
+            is_training = (setup_id % 2 == 0) 
         else:
-            raise ValueError(f"Invalid `benchmark`: expected 'xsub' or 'xview', got '{benchmark}'.")
+            raise ValueError(f"Invalid `benchmark`: expected 'xsub', 'xview' or 'xsetup', got '{benchmark}'.")
 
         if part == "train":
             is_sample = is_training
-        elif part in {"val", "test"}:
+        elif part == "eval":
             is_sample = not is_training
         else:
-            raise ValueError(f"Invalid `part`: expected 'train', 'val' or 'test', got '{part}'.")
+            raise ValueError(f"Invalid `part`: expected 'train' or 'eval', got '{part}'.")
 
         return is_sample
     
@@ -237,24 +244,3 @@ class NTU_Dataset(InMemoryDataset):
                 s[:, :, v1, :] = s[:, :, v1, :] - s[:, :, v2, :]
 
         return s
-
-
-# ==================== CLI Interface ====================
-
-if __name__ == "__main__":
-     parser = argparse.ArgumentParser(description="NTU RGB+D Dataset Processing Script")
-     parser.add_argument("--data_path", help="Path towards the original dataset")
-     parser.add_argument("--modality", default="joint", choices=["joint", "bone"], help="Skeleton's modality")
-     parser.add_argument("--benchmark", default="xsub", choices=["xsub", "xview"], help="Benchmark strategy")
-     parser.add_argument("--part", default="train", choices=["train", "val", "test"], help="Dataset split")
-     args = parser.parse_args()
-
-     dataset = NTU_Dataset(modality=args.modality, benchmark=args.benchmark, part=args.part, 
-                           pre_transform=NTU_Dataset.__nturgbd_pre_transformer__,
-                           pre_filter=NTU_Dataset.__nturgbd_pre_filter__)
-     print(f"Total samples in {args.part}: {dataset.len()}")
-    
-     print(dataset._data)
-     print(dataset.get(0))
-     print(dataset.get_summary())
-     
