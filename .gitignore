@@ -18,6 +18,10 @@ env/
 
 # Data files
 *.skeleton
+*.csv
+*.txt
+*.xlsx
+*.7z
 
 # Git LFS objects
 *.lfs
@@ -25,9 +29,14 @@ env/
 *.zip
 *.gif
 *.pt
+*.html
 
 # Torch geometric temporary/compiled files
 torch_geometric/data/.cache/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+
+# Tensorboard logs
+runs/
+wandb/

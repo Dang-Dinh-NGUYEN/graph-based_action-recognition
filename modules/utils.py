@@ -1,14 +1,13 @@
 import sys
 import torch
-from torch.serialization import safe_globals
+import torch.nn as nn
+import torch
 
-def save_model(output_path : str, model, optimizer, loss_function, history, batch_size):
+def save_model(output_path : str, model, optimizer, history):
     parameters = {
             'model' : model.state_dict(),
             'optimizer' : optimizer.state_dict(),
-            'loss_function' : loss_function,
             'history' : history,
-            'batch_size' : batch_size 
         }
     
     with open(output_path, "wb") as f:
@@ -18,15 +17,24 @@ def save_model(output_path : str, model, optimizer, loss_function, history, batc
 
 def load_model(model_path : str):
     with open(model_path, 'rb') as f:
-        with safe_globals([torch.nn.modules.loss.CrossEntropyLoss]):
-            parameters = torch.load(f, weights_only=True)
+        parameters = torch.load(f, weights_only=False)
 
     model = parameters['model']
     optimizer = parameters['optimizer']
-    loss_function = parameters['loss_function']
     history = parameters['history']
-    batch_size = parameters['batch_size']
 
     print(f"Loaded model from {model_path}", file=sys.stderr)
-    return model, optimizer, loss_function, history, batch_size
+    return model, optimizer, history
 
+class OutputCaptureWrapper(nn.Module):
+    def __init__(self, module, name, storage_dict):
+        super().__init__()
+        self.module = module
+        self.name = name
+        self.storage_dict = storage_dict
+
+    def forward(self, *args, **kwargs):
+        # print("output capture wrapper called")
+        out = self.module(*args, **kwargs)
+        self.storage_dict[self.name] = out
+        return out
