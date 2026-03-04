@@ -8,12 +8,7 @@ def process_data(args):
     config = DATASET_REGISTRY[dataset_name]
 
     pre_transformer = config["pre_transform"] if args.pre_transform else None
-    pre_filter = config["pre_filter"] # if args.pre_filter else None
-
-    # log = [f"Processing {args.dataset} dataset\t", f"Benchmark: {args.benchmark} - Modality: {args.modality}"]
-    # if args.pre_filter and args.part: # A pre_filter should be available to split the dataset into parts
-        # log.append(f"-Part: {args.part}")
-    # log.append(f"Pre_transform: {args.pre_transform}")
+    pre_filter = config["pre_filter"]
 
     print(f"Processing {args.dataset} dataset")
     print(f"Benchmark: {args.benchmark} - Modality: {args.modality} - Part: {args.part}")

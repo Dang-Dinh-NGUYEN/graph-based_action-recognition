@@ -25,10 +25,8 @@ env/
 
 # Git LFS objects
 *.lfs
-*.pt
 *.zip
 *.gif
-*.pt
 *.html
 
 # Torch geometric temporary/compiled files
@@ -40,3 +38,7 @@ torch_geometric/data/.cache/
 # Tensorboard logs
 runs/
 wandb/
+
+analysis/
+models/
+data/

@@ -5,7 +5,6 @@ import numpy as np
 import torch
 from data_generator.ntu_data import NTU_Dataset
 from data_generator.pku_data import PKU_Dataset
-from data_generator.mocap_data import MOCAP_Dataset
 
 BATCH_HANDLER_REGISTRY = {}
 def register_batch_handler(name):
@@ -59,15 +58,7 @@ DATASET_REGISTRY = {
         "pre_filter": PKU_Dataset.__pku_pre_filter__,
         "pre_transform": PKU_Dataset.__pku_pre_transformer__,
         "extended": True,
-    },    
-
-    "mocap": {
-        "class": MOCAP_Dataset,
-        "default_root": "data/MOCAP/",
-        "pre_filter": MOCAP_Dataset.__mocap_pre_filter__,
-        "pre_transform": None,
-        "extended": False,
-    }   
+    },     
 }
 
 def linear_interpolation_sampling(num_frames, MAX_FRAME):

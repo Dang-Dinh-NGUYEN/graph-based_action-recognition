@@ -1,0 +1,45 @@
+---
+experiment_id: ntu60_xsub_bone_semi_1
+
+dataset:
+    benchmark: xsub
+    modality: bone
+    name: nturgb+d
+    pre_transform: true
+    seed: 42
+    type: basic_dataset
+    label_ratio: 0.01
+
+batch_handler:
+    batch_size: 256
+    type: basic_batch_handler
+
+losses:
+list:
+    - name: clf
+      weight: 1
+reduction: sum
+
+model:
+    pre_trained: weights/ntu60_xsub_bone.pt
+    backbone:
+        type: st_gcn_model
+        params:
+          dropout: 0.5
+
+n_epochs: 100
+    
+optimizer: 
+  type: sgd
+  lr: 6.
+  nesterov: False
+  momentum: 0.9
+  weight_decay: 0.
+
+scheduler:
+    params:
+        gamma: 0.1
+        milestones: [80]
+    type: MultiStepLR
+
+validation: true

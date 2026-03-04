@@ -10,8 +10,8 @@ def get_parser():
     # --- Process Mode ---
     process_parser = mode_parser.add_parser("process", help="Process Data")
 
-    process_parser.add_argument("--dataset", type=str, default="nturgb+d", help="path towards dataset: nturgb+d | nturgb+d_120 | pku_mmd | pku_mmd_v2 | mocap")
-    process_parser.add_argument("--modality", default="joint", choices=["joint", "bone", "joint_bone"], help="modality: joint | bone | joint_bone")
+    process_parser.add_argument("--dataset", type=str, default="nturgb+d", help="path towards dataset: nturgb+d | nturgb+d_120 | pku_mmd | pku_mmd_v2")
+    process_parser.add_argument("--modality", default="joint", choices=["joint", "bone", "motion"], help="modality: joint | bone | motion")
     process_parser.add_argument("--benchmark", default="xsub", choices=["xsub", "xview", "xsetup", "multi_class", "multi_label"], help="benchmark: xsub | xview | xsetup")
     process_parser.add_argument("--part", default="train", choices=["train", "eval"], help="part: train | eval")
     process_parser.add_argument("--pre_transform", action="store_true", help="authorize pre-transformation")
