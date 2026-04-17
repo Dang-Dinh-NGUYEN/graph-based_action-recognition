@@ -88,20 +88,7 @@ UMAP visualizations of learned representations on PKU-MMD Part I under different
 
 ![](fig/UMAP_visualization.png)
 
-## Citation
-Please cite our paper if you find this repository useful in your resesarch:
 
-```
-@misc{nguyen2026variationalcontrastivelearningskeletonbased,
-      title={Variational Contrastive Learning for Skeleton-based Action Recognition}, 
-      author={Dang Dinh Nguyen and Decky Aspandi Latif and Titus Zaharia},
-      year={2026},
-      eprint={2601.07666},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2601.07666}, 
-}
-```
 
 ## Acknowledgement
 Our framework is extended from the following repositories. We sincerely thank the authors for releasing the codes.
